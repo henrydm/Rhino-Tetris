@@ -1,0 +1,5 @@
+c:\Users\Henry\Documents\Visual Studio 2012\Projects\RhinoTetris\RhinoTetris\bin\RhinoTetris.dll
+c:\Users\Henry\Documents\Visual Studio 2012\Projects\RhinoTetris\RhinoTetris\bin\RhinoTetris.pdb
+c:\Users\Henry\Documents\Visual Studio 2012\Projects\RhinoTetris\RhinoTetris\obj\Debug64\RhinoTetris.csprojResolveAssemblyReference.cache
+c:\Users\Henry\Documents\Visual Studio 2012\Projects\RhinoTetris\RhinoTetris\obj\Debug64\RhinoTetris.dll
+c:\Users\Henry\Documents\Visual Studio 2012\Projects\RhinoTetris\RhinoTetris\obj\Debug64\RhinoTetris.pdb

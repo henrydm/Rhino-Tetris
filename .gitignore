@@ -1,0 +1,4 @@
+*.pdb
+*.suo
+RhinoTetris\bin\
+RhinoTetris\obj\
