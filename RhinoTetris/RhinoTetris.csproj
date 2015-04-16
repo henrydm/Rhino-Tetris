@@ -45,11 +45,56 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Game.cs" />
+    <Compile Include="KeyboardHook\GlobalEventProvider.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="KeyboardHook\HookManager.Callbacks.cs" />
+    <Compile Include="KeyboardHook\HookManager.cs" />
+    <Compile Include="KeyboardHook\HookManager.Structures.cs" />
+    <Compile Include="KeyboardHook\HookManager.Windows.cs" />
+    <Compile Include="KeyboardHook\MouseEventExtArgs.cs" />
+    <Compile Include="Resource.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resource.resx</DependentUpon>
+    </Compile>
     <Compile Include="Settings.cs" />
     <Compile Include="Block.cs" />
     <Compile Include="Tetris.cs" />
     <Compile Include="RhinoTetrisPlugIn.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resource.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resource.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\move.wav" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\place.wav" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\rotate.wav" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\tetris-gameboy-01.mp3" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\MusicA.wav" />
+  </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="WMPLib">
+      <Guid>{6BF52A50-394A-11D3-B153-00C04F79FAA6}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

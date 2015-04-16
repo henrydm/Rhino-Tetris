@@ -1,11 +1,16 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using Rhino.Display;
+using Rhino.Geometry;
 
 namespace RhinoTetris
 {
     internal class Block
     {
+
         private enum BlockType
         {
             Square,
@@ -13,9 +18,118 @@ namespace RhinoTetris
             L,
             Line
         };
-        public bool[,] Structure { get; private set; }
-        public DisplayMaterial[,] Colors { get; private set; }
-       
+        internal bool[,] Structure { get; private set; }
+        internal DisplayMaterial[,] Colors { get; private set; }
+
+
+        internal Block Rotate()
+        {
+            var newBlock = new Block(Settings.Columns, Settings.Rows);
+            
+            var pointsOriginal = GetPoints();
+            var points = new List<Point3d>(pointsOriginal);
+            var material = Colors[(int)points[0].X, (int)points[0].Z];
+
+            var center = GetCenterPoint(points);
+
+            for (int i = 0; i < points.Count; i++)
+            {
+                var p = new Point3d(points[i]);
+                p.Transform(Transform.Rotation(Math.PI / 2.0, Vector3d.YAxis, center));
+                points[i] = p;
+            }
+
+
+            var bbox = new BoundingBox(points);
+            if (bbox.Min.X < 0)
+            {
+                for (int i = 0; i < points.Count; i++)
+                {
+                    var p = new Point3d(points[i]);
+                    p.Transform(Transform.Translation(new Vector3d(Math.Abs(bbox.Min.X), 0, 0)));
+                    points[i] = p;
+                }
+            }
+            if (bbox.Min.Z < 0)
+            {
+                for (int i = 0; i < points.Count; i++)
+                {
+                    var p = new Point3d(points[i]);
+                    p.Transform(Transform.Translation(new Vector3d(0, 0, Math.Abs(bbox.Min.Z))));
+                    points[i] = p;
+                }
+            }
+            if (bbox.Max.X >= Settings.Columns)
+            {
+                for (int i = 0; i < points.Count; i++)
+                {
+                    var p = new Point3d(points[i]);
+                    p.Transform(Transform.Translation(new Vector3d((int)bbox.Max.X - Settings.Columns - 1, 0, 0)));
+                    points[i] = p;
+                }
+            }
+            if (bbox.Max.Z >= Settings.Rows)
+            {
+                for (int i = 0; i < points.Count; i++)
+                {
+                    var p = new Point3d(points[i]);
+                    p.Transform(Transform.Translation(new Vector3d(0, 0, (int)bbox.Max.Z - Settings.Rows - 1)));
+                    points[i] = p;
+                }
+            }
+           
+
+            for (int column = 0; column < Settings.Columns; column++)
+            {
+                for (int row = 0; row < Settings.Rows; row++)
+                {
+                    var strucPoint = new Point3d(column, 0, row);
+                    if (points.Contains(strucPoint))
+                    {
+                        newBlock.Structure[column, row] = true;
+                        newBlock.Colors[column, row] = material;
+                    }
+                    else
+                    {
+                        newBlock.Structure[column, row] = false;
+                    }
+                }
+            }
+            return newBlock;
+
+        }
+
+        private Point3d GetCenterPoint(IReadOnlyCollection<Point3d> points)
+        {
+            var center = points.Aggregate(Point3d.Origin, (current, p) => current + p) / points.Count;
+
+            return new Point3d((int)Math.Round(center.X, 0), (int)Math.Round(center.Y, 0), (int)Math.Round(center.Z, 0));
+            //var dictionary = new Dictionary<double, Point3d>();
+
+            //foreach (var point in points)
+            //{
+            //    var dist = (point - center).SquareLength;
+            //    if (!dictionary.ContainsKey(dist))
+            //        dictionary.Add(dist, point);
+            //}
+
+            //return dictionary.OrderBy(p => p.Value).ToArray()[0].Value;
+
+        }
+
+        private List<Point3d> GetPoints()
+        {
+            var points = new List<Point3d>();
+            for (int column = 0; column < Settings.Columns; column++)
+            {
+                for (int row = 0; row < Settings.Rows; row++)
+                {
+                    if (Structure[column, row])
+                        points.Add(new Point3d(column, 0, row));
+                }
+            }
+            return points;
+        }
 
         private Block(bool[,] structure, DisplayMaterial[,] colorStructure)
         {
@@ -36,14 +150,61 @@ namespace RhinoTetris
 
         internal int GetMinY()
         {
-            for (int i = 0; i < Settings.Rows; i++)
+            for (int row = 0; row < Settings.Rows; row++)
             {
-                for (int j = 0; j < Settings.Columns; j++)
+                for (int column = 0; column < Settings.Columns; column++)
                 {
-                    if (Structure[j, i]) return i;
+                    if (Structure[column, row])
+                        return row;
                 }
             }
-            return -1;
+            return 0;
+
+        }
+        internal int GetMaxY()
+        {
+            for (int row = Settings.Rows - 1; row >= 0; row--)
+            {
+                for (int column = 0; column < Settings.Columns; column++)
+                {
+
+                    if (Structure[column, row])
+                        return row;
+                }
+            }
+            return 0;
+
+        }
+        internal int GetMinX()
+        {
+            for (int column = 0; column < Settings.Columns; column++)
+            {
+
+                for (int row = 0; row < Settings.Rows; row++)
+                {
+
+                    if (Structure[column, row])
+                    {
+                        return column;
+                    }
+                }
+            }
+            return 0;
+
+        }
+        internal int GetMaxX()
+        {
+            for (int column = Settings.Columns - 1; column >= 0; column--)
+            {
+                for (int row = Settings.Rows - 1; row >= 0; row--)
+                {
+                    if (Structure[column, row])
+                    {
+                        return column;
+                    }
+                }
+            }
+            return 0;
 
         }
 
@@ -59,14 +220,16 @@ namespace RhinoTetris
                 }
             }
             return false;
+
         }
 
-        
+
 
         private bool[,] MergeStructure(bool[,] other)
         {
+
             var ret = new bool[Settings.Columns, Settings.Rows];
-            
+
             for (int i = 0; i < Settings.Columns; i++)
             {
                 for (int j = 0; j < Settings.Rows; j++)
@@ -75,9 +238,12 @@ namespace RhinoTetris
                 }
             }
             return ret;
+
         }
         private DisplayMaterial[,] MergeColors(DisplayMaterial[,] other)
         {
+
+
             var ret = new DisplayMaterial[Settings.Columns, Settings.Rows];
             for (int i = 0; i < Settings.Columns; i++)
             {
@@ -91,6 +257,7 @@ namespace RhinoTetris
                 }
             }
             return ret;
+
         }
 
         internal Block Merge(Block other)
@@ -101,43 +268,51 @@ namespace RhinoTetris
             return ret;
         }
 
+
         internal Block Translate(int x, int y)
         {
+            var maxX = GetMaxX();
+            var minX = GetMinX();
+            var minY = GetMinY();
+
+            if (maxX + x >= Settings.Columns || minX + x < 0 || minY + y < 0) return this;
+
             var newStructure = new bool[Settings.Columns, Settings.Rows];
             var newColorStructure = new DisplayMaterial[Settings.Columns, Settings.Rows];
-            for (var i = 0; i < Settings.Columns; i++)
+            for (var column = 0; column < Settings.Columns; column++)
             {
-                for (int j = 0; j < Settings.Rows; j++)
+                for (int row = 0; row < Settings.Rows; row++)
                 {
-                    if (Structure[i, j])
+                    if (Structure[column, row])
                     {
-                        newStructure[i + x, j + y] = true;
-                        newColorStructure[i + x, j + y] = Colors[i, j];
+                        newStructure[column + x, row + y] = true;
+                        newColorStructure[column + x, row + y] = Colors[column, row];
                     }
                 }
             }
-            return new Block(newStructure,newColorStructure);
+
+            return new Block(newStructure, newColorStructure);
 
         }
 
         private Block InitialTransform()
         {
-            var maxX = 0;
-            var maxY = 0;
+            var maxX = GetMaxX();
+            var maxY = GetMaxY();
 
-            for (var i = 0; i < Settings.Columns; i++)
-            {
-                for (var j = 0; j < Settings.Rows; j++)
-                {
-                    if (!Structure[i, j]) continue;
-                    if (i > maxX) maxX = i;
-                    if (j > maxY) maxY = j;
-                }
-            }
+            //for (var column = 0; column < Settings.Columns; column++)
+            //{
+            //    for (var row = 0; row < Settings.Rows; row++)
+            //    {
+            //        if (!Structure[column, row]) continue;
+            //        if (column > maxX) maxX = column;
+            //        if (row > maxY) maxY = row;
+            //    }
+            //}
 
             var maxXHalf = maxX / 2;
-            var xMotion = maxXHalf + Settings.Columns / 2 - maxXHalf-1;
-            var yMotion = Settings.Rows - maxY-1;
+            var xMotion = maxXHalf + Settings.Columns / 2 - maxXHalf - 1;
+            var yMotion = Settings.Rows - maxY - 1;
             return Translate(xMotion, yMotion);
         }
 
@@ -145,7 +320,7 @@ namespace RhinoTetris
         {
             get
             {
-                return new Block(Settings.Columns,Settings.Rows);
+                return new Block(Settings.Columns, Settings.Rows);
             }
         }
 
@@ -189,7 +364,41 @@ namespace RhinoTetris
             return GetBlockStructure((BlockType)new Random().Next(Enum.GetValues(typeof(BlockType)).Length));
         }
 
+        internal void RemoveRow(int i)
+        {
 
+            for (int row = i; row < Settings.Rows - 1; row++)
+            {
+                for (int column = 0; column < Settings.Columns; column++)
+                {
+                    Structure[column, row] = Structure[column, row + 1];
+                    Colors[column, row] = Colors[column, row + 1];
+                }
+            }
+        }
+
+
+        internal List<int> CheckForFullLines()
+        {
+
+            var ret = new List<int>();
+            for (int i = 0; i < Settings.Rows; i++)
+            {
+                var all = true;
+                for (int j = 0; j < Settings.Columns; j++)
+                {
+                    if (!Structure[j, i])
+                    {
+                        all = false;
+                        break;
+                    }
+                }
+                if (all) ret.Add(i);
+            }
+
+            return ret.Any() ? ret.OrderByDescending(p => p).ToList() : null;
+
+        }
 
         private static DisplayMaterial[,] GetColorArray(bool[,] structure)
         {
@@ -217,5 +426,7 @@ namespace RhinoTetris
             Color randomColor = Color.FromKnownColor(randomColorName);
             return new DisplayMaterial(randomColor);
         }
+
+
     }
 }

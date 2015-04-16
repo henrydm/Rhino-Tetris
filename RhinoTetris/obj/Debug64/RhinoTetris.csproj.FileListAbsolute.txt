@@ -3,3 +3,12 @@ c:\Users\Henry\Documents\Visual Studio 2012\Projects\RhinoTetris\RhinoTetris\bin
 c:\Users\Henry\Documents\Visual Studio 2012\Projects\RhinoTetris\RhinoTetris\obj\Debug64\RhinoTetris.csprojResolveAssemblyReference.cache
 c:\Users\Henry\Documents\Visual Studio 2012\Projects\RhinoTetris\RhinoTetris\obj\Debug64\RhinoTetris.dll
 c:\Users\Henry\Documents\Visual Studio 2012\Projects\RhinoTetris\RhinoTetris\obj\Debug64\RhinoTetris.pdb
+C:\Users\Henry\Google Drive\codis\c#\Rhino-Tetris\RhinoTetris\obj\Debug64\RhinoTetris.csprojResolveAssemblyReference.cache
+C:\Users\Henry\Google Drive\codis\c#\Rhino-Tetris\RhinoTetris\obj\Debug64\RhinoTetris.dll
+C:\Users\Henry\Google Drive\codis\c#\Rhino-Tetris\RhinoTetris\obj\Debug64\RhinoTetris.pdb
+C:\Users\Henry\Google Drive\codis\c#\Rhino-Tetris\RhinoTetris\bin\RhinoTetris.dll
+C:\Users\Henry\Google Drive\codis\c#\Rhino-Tetris\RhinoTetris\bin\RhinoTetris.pdb
+C:\Users\Henry\Google Drive\codis\c#\Rhino-Tetris\RhinoTetris\obj\Debug64\RhinoTetris.Resource.resources
+C:\Users\Henry\Google Drive\codis\c#\Rhino-Tetris\RhinoTetris\obj\Debug64\RhinoTetris.csproj.GenerateResource.Cache
+C:\Users\Henry\Google Drive\codis\c#\Rhino-Tetris\RhinoTetris\obj\Debug64\Interop.WMPLib.dll
+C:\Users\Henry\Google Drive\codis\c#\Rhino-Tetris\RhinoTetris\obj\Debug64\RhinoTetris.csproj.ResolveComReference.cache

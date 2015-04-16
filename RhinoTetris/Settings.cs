@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Rhino.Geometry;
 
 namespace RhinoTetris
@@ -22,8 +18,8 @@ namespace RhinoTetris
             Rows = 14;
             Columns = 10;
 
-            Width = Rows;
-            Heigth = Columns;
+            Width = Columns;
+            Heigth =  Rows;
             Depth = Width / Convert.ToDouble(Rows);
 
             var interval = new Interval(-0.5, 0.5);
@@ -35,16 +31,14 @@ namespace RhinoTetris
         private static void CreateTransforms()
         {
             var halfWidth = Width / 2.0;
-            var halfHeight = Heigth / 2.0;
-
+           
             Transforms = new Transform[Columns, Rows];
-            for (int i = 0; i < Columns; i++)
-                for (int j = 0; j < Rows; j++)
+            for (int column = 0; column < Columns; column++)
+                for (int row = 0; row < Rows; row++)
                 {
-
-                    var x = i - halfWidth + 0.5;
-                    var y = j - halfHeight + 0.5;
-                    Transforms[i, j] = Transform.Translation(x, y, 0);
+                    var x = column - halfWidth + 0.5;
+                    var z = row + 0.5;
+                    Transforms[column, row] = Transform.Translation(x, 0, z);
                 }
         }
     }
