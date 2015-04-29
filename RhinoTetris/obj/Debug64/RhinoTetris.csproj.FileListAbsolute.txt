@@ -10,5 +10,3 @@ C:\Users\Henry\Google Drive\codis\c#\Rhino-Tetris\RhinoTetris\bin\RhinoTetris.dl
 C:\Users\Henry\Google Drive\codis\c#\Rhino-Tetris\RhinoTetris\bin\RhinoTetris.pdb
 C:\Users\Henry\Google Drive\codis\c#\Rhino-Tetris\RhinoTetris\obj\Debug64\RhinoTetris.Resource.resources
 C:\Users\Henry\Google Drive\codis\c#\Rhino-Tetris\RhinoTetris\obj\Debug64\RhinoTetris.csproj.GenerateResource.Cache
-C:\Users\Henry\Google Drive\codis\c#\Rhino-Tetris\RhinoTetris\obj\Debug64\Interop.WMPLib.dll
-C:\Users\Henry\Google Drive\codis\c#\Rhino-Tetris\RhinoTetris\obj\Debug64\RhinoTetris.csproj.ResolveComReference.cache

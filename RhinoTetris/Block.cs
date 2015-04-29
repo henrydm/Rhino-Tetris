@@ -16,6 +16,9 @@ namespace RhinoTetris
             Square,
             Tri,
             L,
+            LReverse,
+            S,
+            SReverse,
             Line
         };
         internal bool[,] Structure { get; private set; }
@@ -25,7 +28,7 @@ namespace RhinoTetris
         internal Block Rotate()
         {
             var newBlock = new Block(Settings.Columns, Settings.Rows);
-            
+
             var pointsOriginal = GetPoints();
             var points = new List<Point3d>(pointsOriginal);
             var material = Colors[(int)points[0].X, (int)points[0].Z];
@@ -73,11 +76,11 @@ namespace RhinoTetris
                 for (int i = 0; i < points.Count; i++)
                 {
                     var p = new Point3d(points[i]);
-                    p.Transform(Transform.Translation(new Vector3d(0, 0, (int)bbox.Max.Z - Settings.Rows - 1)));
+                    p.Transform(Transform.Translation(new Vector3d(0, 0, (int)bbox.Max.Z - Settings.Rows - 2)));
                     points[i] = p;
                 }
             }
-           
+
 
             for (int column = 0; column < Settings.Columns; column++)
             {
@@ -98,8 +101,8 @@ namespace RhinoTetris
             return newBlock;
 
         }
-
-        private Point3d GetCenterPoint(IReadOnlyCollection<Point3d> points)
+        public Mesh Mesh { get; private set; }
+        private static Point3d GetCenterPoint(IReadOnlyCollection<Point3d> points)
         {
             var center = points.Aggregate(Point3d.Origin, (current, p) => current + p) / points.Count;
 
@@ -117,7 +120,7 @@ namespace RhinoTetris
 
         }
 
-        private List<Point3d> GetPoints()
+        private IEnumerable<Point3d> GetPoints()
         {
             var points = new List<Point3d>();
             for (int column = 0; column < Settings.Columns; column++)
@@ -135,12 +138,33 @@ namespace RhinoTetris
         {
             Structure = structure;
             Colors = colorStructure;
+            Mesh = new Mesh();
+            for (int i = 0; i < Settings.Columns; i++)
+            {
+                for (int j = 0; j < Settings.Rows; j++)
+                {
+                    if (!Structure[i,j])continue;
+
+                    var block = Settings.Shape.DuplicateMesh();
+                    block.Transform(Settings.Transforms[i, j]);
+                    Mesh.Append(block);
+                }
+            }
+            var target = new Point3d(Settings.Width-2, 0, 3);
+            Mesh.Translate(target - Mesh.GetBoundingBox(true).Center);
         }
 
-        private Block(int columns, int rows)
+        internal DisplayMaterial GetFirstColor()
         {
-            Structure = new bool[columns, rows];
-            Colors = new DisplayMaterial[columns, rows];
+            foreach (var displayMaterial in Colors)
+            {
+                if (displayMaterial!=null) return displayMaterial;
+            }
+            return null;
+        }
+        private Block(int columns, int rows)
+            : this(new bool[columns, rows], new DisplayMaterial[columns, rows])
+        {
         }
 
         internal bool Collide(Block other)
@@ -347,6 +371,24 @@ namespace RhinoTetris
                     structure[0, 1] = true;
                     structure[0, 2] = true;
                     break;
+                case BlockType.LReverse:
+                    structure[0, 0] = true;
+                    structure[1, 0] = true;
+                    structure[1, 1] = true;
+                    structure[1, 2] = true;
+                    break;
+                case BlockType.S:
+                    structure[0, 0] = true;
+                    structure[1, 0] = true;
+                    structure[1, 1] = true;
+                    structure[2, 1] = true;
+                    break;
+                case BlockType.SReverse:
+                    structure[0, 1] = true;
+                    structure[1, 1] = true;
+                    structure[1, 0] = true;
+                    structure[2, 0] = true;
+                    break;
                 case BlockType.Line:
                     structure[0, 0] = true;
                     structure[1, 0] = true;
@@ -354,9 +396,33 @@ namespace RhinoTetris
                     structure[3, 0] = true;
                     break;
             }
-            var colors = GetColorArray(structure);
+
+            var colors = GetColorArray(structure, GetColor(type));
             var block = new Block(structure, colors);
             return block.InitialTransform();
+        }
+
+        private static Color GetColor(BlockType type)
+        {
+            switch (type)
+            {
+                case BlockType.Square:
+                    return Color.DarkOliveGreen;
+                case BlockType.Tri:
+                    return Color.DarkOrchid;
+                case BlockType.L:
+                    return Color.SaddleBrown;
+                case BlockType.LReverse:
+                    return Color.RoyalBlue;
+                case BlockType.S:
+                    return Color.Maroon;
+                case BlockType.SReverse:
+                    return Color.OrangeRed;
+                case BlockType.Line:
+                    return Color.Goldenrod;
+                default:
+                    return Color.Black;
+            }
         }
 
         internal static Block GetNextBlock()
@@ -400,17 +466,17 @@ namespace RhinoTetris
 
         }
 
-        private static DisplayMaterial[,] GetColorArray(bool[,] structure)
+        private static DisplayMaterial[,] GetColorArray(bool[,] structure, Color color)
         {
             var colorArray = new DisplayMaterial[Settings.Columns, Settings.Rows];
 
-            var color = GetRandomColor();
+            var material = new DisplayMaterial(color);
             for (var i = 0; i < Settings.Columns; i++)
             {
                 for (int j = 0; j < Settings.Rows; j++)
                 {
                     if (structure[i, j])
-                        colorArray[i, j] = color;
+                        colorArray[i, j] = material;
                     else
                         colorArray[i, j] = null;
                 }
@@ -418,13 +484,17 @@ namespace RhinoTetris
             return colorArray;
         }
 
-        private static DisplayMaterial GetRandomColor()
+        private static DisplayMaterial[,] GetColorArray(bool[,] structure)
         {
-            Random randomGen = new Random();
-            KnownColor[] names = (KnownColor[])Enum.GetValues(typeof(KnownColor));
-            KnownColor randomColorName = names[randomGen.Next(names.Length)];
-            Color randomColor = Color.FromKnownColor(randomColorName);
-            return new DisplayMaterial(randomColor);
+            return GetColorArray(structure, GetRandomColor());
+        }
+
+        private static Color GetRandomColor()
+        {
+            var randomGen = new Random();
+            var names = (KnownColor[])Enum.GetValues(typeof(KnownColor));
+            var randomColorName = names[randomGen.Next(names.Length)];
+            return Color.FromKnownColor(randomColorName);
         }
 
 
