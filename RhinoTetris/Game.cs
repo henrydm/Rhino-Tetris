@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Media;
@@ -10,35 +11,46 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Media;
+using System.Windows.Media.Media3D;
 using System.Windows.Threading;
 using Rhino;
 using Rhino.Display;
 using Gma.UserActivityMonitor;
 using Rhino.Geometry;
+using WMPLib;
 using Color = System.Drawing.Color;
 
 namespace RhinoTetris
 {
-
-
     class Game
     {
         private enum Status { Moved, Merged, Line, Lost, Win }
-        private enum SoundType { Rotate, Move, Place,Line,Lost }
-        private int _lines, _points, _level, _blocksWaitingTicks;
+        private int _lines, _points, _level, _waitingMilliseconds, _waitingTicks;
         private List<int> _animationLines;
         private Mesh _limits;
+        WindowsMediaPlayer[] _fxPlayers;
+        public bool Music { get; private set; }
+        public bool StartingAnimationEnabled { get; set; }
+
+
+        public bool Fx { get; set; }
+
+        private int _playerCurrent;
         private MediaPlayer _playerMusic;
         private DisplayMaterial _limitsDisplayMaterial;
-        private bool _downKeyDown, _leftKeyDown, _rightKeyDown, _upKeyDown, _upKeyReleased, _rotationDone;
+        private bool _downKeyDown, _leftKeyDown, _rightKeyDown, _rotationKeyDown, _rotationDone, _whiteLines;
+        public static bool Playing { get; set; }
         private Block _gameBlock;
         private Block _currentBlock;
         private Block _nextBlock;
         private BackgroundWorker _mainBw;
-        private bool _playing, _whiteLines;
-        private string _musicPath, _fxRotatePath, _fxMovePath, _fxPlacePath, _fxLinePath,_fxLostPath;
-        private Text3d _scorePointsLabel, _scoreLinesLabel, _scoreLevelLabel, _scorePoints, _scoreLines, _scoreLevel;
-       
+        private double _initAnimationZ;
+
+        private string _musicPath, _fxRotatePath, _fxMovePath, _fxPlacePath, _fxLinePath, _fxLostPath, _fxBootUpPath, _fx4LinesPath, _fxLevelUp;
+        private Text3d _scorePointsLabel, _scoreLinesLabel, _scoreLevelLabel, _scorePoints, _scoreLines, _scoreLevel, _introText1, _introText2;
+        private Brep _introBorder;
+        internal event EventHandler OnStopGame;
+
         private static void WriteFile(string filePath, Stream stream)
         {
             //if (!File.Exists(filePath))
@@ -59,9 +71,12 @@ namespace RhinoTetris
             // }
         }
 
-
         private void SetUpScene()
         {
+            Playing = true;
+            _waitingMilliseconds = 80;
+
+            Music = true;
             _animationLines = new List<int>();
             var tempFolder = Path.GetTempPath();
             _musicPath = Path.Combine(tempFolder, "MusicA.wav");
@@ -70,6 +85,10 @@ namespace RhinoTetris
             _fxPlacePath = Path.Combine(tempFolder, "place.wav");
             _fxLinePath = Path.Combine(tempFolder, "line.wav");
             _fxLostPath = Path.Combine(tempFolder, "lost.wav");
+            _fxBootUpPath = Path.Combine(tempFolder, "bootup.wav");
+            _fx4LinesPath = Path.Combine(tempFolder, "tetris.wav");
+            _fxLevelUp = Path.Combine(tempFolder, "levelUp.wav");
+
 
             WriteFile(_musicPath, Resource.MusicA);
             WriteFile(_fxRotatePath, Resource.rotate);
@@ -77,18 +96,17 @@ namespace RhinoTetris
             WriteFile(_fxPlacePath, Resource.place);
             WriteFile(_fxLinePath, Resource.line);
             WriteFile(_fxLostPath, Resource.lost);
-
-            _playerMusic = new MediaPlayer();
-            _playerMusic.Open(new Uri(_musicPath));
-            _playerMusic.MediaEnded += _playerMusic_MediaEnded;
-            _playerMusic.Play();
+            WriteFile(_fxBootUpPath, Resource.bootUp);
+            WriteFile(_fx4LinesPath, Resource._4lines);
+            WriteFile(_fxLevelUp, Resource.levelUp);
 
             _gameBlock = Block.Empty;
             _mainBw = new BackgroundWorker { WorkerReportsProgress = true };
             _mainBw.DoWork += GameLoop;
-            _mainBw.ProgressChanged += _mainBw_ProgressChanged;
+
             _mainBw.RunWorkerCompleted += GameFinished;
-            _limitsDisplayMaterial = new DisplayMaterial(Color.IndianRed);
+            _limitsDisplayMaterial = new DisplayMaterial(Color.DarkSlateGray);
+            _introDisplayMaterial = new DisplayMaterial(Color.DimGray);
             CreateLimits();
             GenerateBlocks();
             DisplayPipeline.CalculateBoundingBox += DisplayPipeline_CalculateBoundingBox;
@@ -96,52 +114,53 @@ namespace RhinoTetris
             HookManager.KeyDown += HookManager_KeyDown;
             HookManager.KeyUp += HookManager_KeyUp;
 
-            _points = 0;
-            _lines = 0;
-            SetLevel();
+            _fxPlayers = new WindowsMediaPlayer[15];
+            for (int i = 0; i < _fxPlayers.Length; i++)
+            {
+                _fxPlayers[i] = new WindowsMediaPlayer();
+            }
+
+
 
         }
         private void SetDownScene()
         {
+            
             DisplayPipeline.CalculateBoundingBox -= DisplayPipeline_CalculateBoundingBox;
             DisplayPipeline.PostDrawObjects -= DisplayPipeline_PostDrawObjects;
             HookManager.KeyDown -= HookManager_KeyDown;
             HookManager.KeyUp -= HookManager_KeyUp;
         }
 
+        public void SetMusic(bool enable)
+        {
+            Music = enable;
+            if (_playerMusic == null) return;
+            if (enable)
+                _playerMusic.Play();
+            else
+                _playerMusic.Stop();
+        }
+
         void _playerMusic_MediaEnded(object sender, EventArgs e)
         {
+            if (!Music) return;
             _playerMusic = new MediaPlayer();
             _playerMusic.Open(new Uri(_musicPath));
             _playerMusic.MediaEnded += _playerMusic_MediaEnded;
             _playerMusic.Play();
         }
 
-        void _mainBw_ProgressChanged(object sender, ProgressChangedEventArgs e)
+        private DisplayMaterial _introDisplayMaterial;
+        void PlayFx(string uri)
         {
-            var type = (SoundType)e.UserState;
-            var pl = new MediaPlayer();
+            if (Fx) return;
+            _playerCurrent++;
+            if (_playerCurrent >= _fxPlayers.Length)
+                _playerCurrent = 0;
 
-            switch (type)
-            {
-                case SoundType.Rotate:
-                    pl.Open(new Uri(_fxRotatePath));
-                    break;
-                case SoundType.Move:
-                    pl.Open(new Uri(_fxMovePath));
-                    break;
-                case SoundType.Place:
-                    pl.Open(new Uri(_fxPlacePath));
-                    break;
-                case SoundType.Line:
-                    pl.Open(new Uri(_fxLinePath));
-                    break;
-                case SoundType.Lost:
-                    pl.Open(new Uri(_fxLostPath));
-                    break;
-            }
-            pl.Play();
-
+            _fxPlayers[_playerCurrent].URL = uri;
+            
         }
 
         private void CreateLimits()
@@ -155,8 +174,8 @@ namespace RhinoTetris
             var minRight = new Point3d(halfX, -0.8, 0);
             var maxRight = new Point3d(halfX + 1, 0.8, Settings.Heigth);
 
-            var minDown = new Point3d(-halfX - 1, -0.8, -1);
-            var maxDown = new Point3d(halfX + 1, 0.8, 0);
+            //var minDown = new Point3d(-halfX - 1, -0.8, -1);
+            //var maxDown = new Point3d(halfX + 1, 0.8, 0);
 
             var left = Mesh.CreateFromBox(new BoundingBox(minLeft, maxLeft), 1, 1, 1);
             var right = Mesh.CreateFromBox(new BoundingBox(minRight, maxRight), 1, 1, 1);
@@ -211,7 +230,7 @@ namespace RhinoTetris
 
             var planePoints = new Plane(new Point3d((maxScoreUp.X + minScoreUp.X) / 2.0 - 1.5, 0, (sizeInfoBox * 4.0) + 0.3), Vector3d.XAxis, Vector3d.ZAxis);
             _scorePointsLabel = new Text3d("Points", planePoints, 0.5);
-            var pointsHalfX = (_scorePointsLabel.BoundingBox.Max.X + _scorePointsLabel.BoundingBox.Min.X) / 2.0;
+            // var pointsHalfX = (_scorePointsLabel.BoundingBox.Max.X + _scorePointsLabel.BoundingBox.Min.X) / 2.0;
 
 
             var planeLevel = new Plane(new Point3d((maxScoreUp.X + minScoreUp.X) / 2.0 - 1.5, 0, (sizeInfoBox * 3.0) + 0.3), Vector3d.XAxis, Vector3d.ZAxis);
@@ -264,7 +283,6 @@ namespace RhinoTetris
 
         void HookManager_KeyUp(object sender, KeyEventArgs e)
         {
-
             switch (e.KeyCode)
             {
                 case Keys.Down:
@@ -280,8 +298,11 @@ namespace RhinoTetris
                     e.SuppressKeyPress = true;
                     break;
                 case Keys.Up:
-                    _rotationDone = false;
-                    _upKeyDown = false;
+                    _rotationKeyDown = false;
+                    e.SuppressKeyPress = true;
+                    break;
+                case Keys.Space:
+                    _rotationKeyDown = false;
                     e.SuppressKeyPress = true;
                     break;
             }
@@ -305,10 +326,17 @@ namespace RhinoTetris
                     e.SuppressKeyPress = true;
                     break;
                 case Keys.Up:
-
-                    _upKeyDown = true;
-
-
+                    _rotationDone = false;
+                    _rotationKeyDown = true;
+                    e.SuppressKeyPress = true;
+                    break;
+                case Keys.Space:
+                    _rotationDone = false;
+                    _rotationKeyDown = true;
+                    e.SuppressKeyPress = true;
+                    break;
+                case Keys.Escape:
+                    Playing = false;
                     e.SuppressKeyPress = true;
                     break;
             }
@@ -318,9 +346,36 @@ namespace RhinoTetris
 
         public void StartGame()
         {
+
+            _level = 1;
+
+
+            _initAnimationZ = 0.01;
             SetUpScene();
+
+            var bw = new BackgroundWorker();
+            bw.DoWork += (o, e) =>
+            {
+                _initAnimationZ = 0;
+                if (StartingAnimationEnabled)
+                { StartingAnimation(); }
+            };
+
+
+            bw.RunWorkerCompleted += (o, e) =>
+            {
+                _playerMusic = new MediaPlayer();
+                _playerMusic.Open(new Uri(_musicPath));
+                _playerMusic.MediaEnded += _playerMusic_MediaEnded;
+                if (Music)
+                    _playerMusic.Play();
+                _mainBw.RunWorkerAsync();
+                RhinoDoc.ActiveDoc.Views.Redraw();
+            };
+
+            bw.RunWorkerAsync();
+
             RhinoDoc.ActiveDoc.Views.Redraw();
-            _mainBw.RunWorkerAsync();
         }
 
         private void ShowAnimationLines()
@@ -344,22 +399,94 @@ namespace RhinoTetris
             };
             bw.RunWorkerAsync();
         }
+        private void StartingAnimation()
+        {
+            _introText1 = new Text3d("Rhinoceros®") { Height = 1.5 };
+            _introText2 = new Text3d("Classic Games") { Height = 0.7 };
+            _initAnimationZ = 0.01;
 
+            var offsetX = (_introText1.BoundingBox.Max.X - _introText1.BoundingBox.Min.X) / 2.0;
+
+            var leftpt = new Point3d(-5, 0, 0.2);
+            var rightpt = new Point3d(5, 0, 0.2);
+
+            var arcLeftSmall = new Arc(new Plane(leftpt, Vector3d.ZAxis, -Vector3d.XAxis), 1.7, Math.PI).ToNurbsCurve();
+            var arcLeftBig = new Arc(new Plane(leftpt, Vector3d.ZAxis, -Vector3d.XAxis), 2.1, Math.PI).ToNurbsCurve();
+
+            var arcRightSmall = new Arc(new Plane(rightpt, Vector3d.ZAxis, Vector3d.XAxis), 1.7, Math.PI).ToNurbsCurve();
+            var arcRightBig = new Arc(new Plane(rightpt, Vector3d.ZAxis, Vector3d.XAxis), 2.1, Math.PI).ToNurbsCurve();
+
+            var lineUpBigA = new Line(arcLeftBig.PointAtStart, arcRightBig.PointAtStart).ToNurbsCurve();
+            var lineBottomBigA = new Line(arcLeftBig.PointAtEnd, arcRightBig.PointAtEnd).ToNurbsCurve();
+
+            var lineUpSmallA = new Line(arcLeftSmall.PointAtStart, arcRightSmall.PointAtStart).ToNurbsCurve();
+            var lineBottomSmallB = new Line(arcLeftSmall.PointAtEnd, arcRightSmall.PointAtEnd).ToNurbsCurve();
+
+            var cross = new Line(arcLeftBig.PointAtStart, arcLeftSmall.PointAtStart).ToNurbsCurve();
+
+            var join = Curve.JoinCurves(new[] { arcLeftBig, arcLeftSmall, lineUpBigA, lineBottomBigA, lineUpSmallA, lineBottomSmallB, arcRightSmall, arcRightBig });
+
+            if (join != null && join.Count() == 2)
+            {
+
+
+                var sweep = new SweepOneRail { ClosedSweep = true };
+                var breps = sweep.PerformSweep(join[0], cross);
+                if (breps != null && breps.Count() == 1)
+                    _introBorder = breps[0];
+
+            }
+
+
+            var sw = new Stopwatch();
+            for (int i = 0; i < 100; i++)
+            {
+                sw.Restart();
+                _introBorder.Translate(Point3d.Origin - new Point3d(0, 0, _initAnimationZ));
+                _initAnimationZ += 0.1;
+                var plane1 = new Plane(new Point3d(-offsetX, 0, _initAnimationZ), Vector3d.XAxis, Vector3d.ZAxis);
+                var plane2 = new Plane(new Point3d(-offsetX + 0.2, 0, _initAnimationZ - 1), Vector3d.XAxis, Vector3d.ZAxis);
+
+                _introText1.TextPlane = plane1;
+                _introText2.TextPlane = plane2;
+                _introBorder.Translate(Point3d.Origin - new Point3d(0, 0, -_initAnimationZ));
+
+                RhinoDoc.ActiveDoc.Views.Redraw();
+
+                if (sw.ElapsedMilliseconds < 40)
+                {
+                    Thread.Sleep(40 - (int)sw.ElapsedMilliseconds);
+                }
+            }
+            Thread.Sleep(300);
+            var fx = new MediaPlayer();
+            fx.Open(new Uri(_fxBootUpPath));
+            fx.MediaEnded += _playerMusic_MediaEnded;
+            fx.Play();
+            Thread.Sleep(1000);
+            RhinoDoc.ActiveDoc.Views.Redraw();
+            _initAnimationZ = 0;
+
+        }
         void GameLoop(object sender, DoWorkEventArgs e)
         {
-            _playing = true;
-
+            Playing = true;
+            _waitingTicks = 36;
+            _points = 0;
+            _lines = 0;
+            _level = 0;
             var cont = 0;
-            while (_playing)
+            var sw = new Stopwatch();
+            while (Playing)
             {
                 cont++;
-
+                sw.Restart();
                 if (_currentBlock == null) continue;
 
-                if (_upKeyDown && !_rotationDone)
+                if (_rotationKeyDown && !_rotationDone)
                 {
-                    _mainBw.ReportProgress(0, SoundType.Rotate);
                     _rotationDone = true;
+                    PlayFx(_fxRotatePath);
                     var rotatedBlock = _currentBlock.Rotate();
                     if (!rotatedBlock.Collide(_gameBlock))
                         _currentBlock = rotatedBlock;
@@ -368,7 +495,8 @@ namespace RhinoTetris
 
                 if (_leftKeyDown)
                 {
-                    _mainBw.ReportProgress(0, SoundType.Move);
+                    PlayFx(_fxMovePath);
+
                     var translated = _currentBlock.Translate(-1, 0);
                     if (!_gameBlock.Collide(translated))
                         _currentBlock = translated;
@@ -376,7 +504,8 @@ namespace RhinoTetris
                 }
                 if (_rightKeyDown)
                 {
-                    _mainBw.ReportProgress(0, SoundType.Move);
+                    PlayFx(_fxMovePath);
+
                     var translated = _currentBlock.Translate(1, 0);
                     if (!_gameBlock.Collide(translated))
                         _currentBlock = translated;
@@ -389,34 +518,42 @@ namespace RhinoTetris
                     if (result == Status.Moved)
                     {
                         _points++;
-                        CreateText3DPoints();
                         SetLevel();
                     }
+
 
                     RhinoDoc.ActiveDoc.Views.Redraw();
                 }
 
-                if (cont >= _blocksWaitingTicks)
+                if (cont >= _waitingTicks)
                 {
+
                     var res = CheckScene();
                     if (res == Status.Lost)
                     {
-                        _mainBw.ReportProgress(0, SoundType.Lost);
-                        _playing = false;
+                        PlayFx(_fxLostPath);
+                        Playing = false;
                         e.Result = res;
+                        if (OnStopGame != null)
+                            OnStopGame(this, null);
                         break;
                     }
-                    else if (res == Status.Lost)
+                    if (res == Status.Win)
                     {
-                        _mainBw.ReportProgress(0, SoundType.Lost);
-                        _playing = false;
+                        PlayFx(_fxLostPath);
+                        Playing = false;
                         e.Result = res;
                         break;
                     }
                     cont = 0;
                     RhinoDoc.ActiveDoc.Views.Redraw();
+
+
                 }
-                Thread.Sleep(50);
+                if (sw.ElapsedMilliseconds < _waitingMilliseconds)
+                {
+                    Thread.Sleep(_waitingMilliseconds - (int)sw.ElapsedMilliseconds);
+                }
             }
         }
 
@@ -424,7 +561,6 @@ namespace RhinoTetris
         void GameFinished(object sender, RunWorkerCompletedEventArgs e)
         {
             _playerMusic.Stop();
-            Thread.Sleep(1500);
             SetDownScene();
             RhinoDoc.ActiveDoc.Views.Redraw();
         }
@@ -437,15 +573,12 @@ namespace RhinoTetris
                     _points += 40;
                     break;
                 case 2:
-                    _points += 100;
+                    _points += 300;
                     break;
                 case 3:
                     _points += 300;
                     break;
                 case 4:
-                    _points += 600;
-                    break;
-                case 5:
                     _points += 1000;
                     break;
             }
@@ -455,8 +588,31 @@ namespace RhinoTetris
 
         private void SetLevel()
         {
-            _level = (_points / 1000) + 1;
-            _blocksWaitingTicks = (20 / _level * 2);
+            var level = (_lines / 10) + 1;
+            if (_level == level)
+            {
+                return;
+
+            }
+            if (_level > 1)
+            { PlayFx(_fxLevelUp); }
+            _level = level;
+
+
+            if (_level < 5)
+            {
+                _waitingTicks -= (13 - _level * 2);
+            }
+            else if (_level < 7)
+            {
+                _waitingTicks -= (9 - _level);
+            }
+
+            else
+                RhinoMath.Clamp(_waitingTicks -= 2, 6, 200);
+
+
+
             CreateText3DLevel();
         }
 
@@ -473,6 +629,9 @@ namespace RhinoTetris
             List<int> fullLines;
             var res = MoveDownOrMerge(_currentBlock, out fullLines);
 
+            if (res != Status.Moved)
+                CreateText3DPoints();
+
             if (res == Status.Line)
             {
                 _lines += fullLines.Count;
@@ -481,7 +640,7 @@ namespace RhinoTetris
 
                 _animationLines = fullLines;
                 ShowAnimationLines();
-                _mainBw.ReportProgress(0, SoundType.Line);
+                PlayFx(fullLines.Count == 4 ? _fx4LinesPath : _fxLinePath);
                 return Status.Line;
             }
 
@@ -494,7 +653,7 @@ namespace RhinoTetris
             var minY = _currentBlock.GetMinY();
             if (minY == 0)
             {
-                _mainBw.ReportProgress(0, SoundType.Place);
+                PlayFx(_fxPlacePath);
                 _gameBlock = _gameBlock.Merge(block);
                 GenerateBlocks();
                 lines = _gameBlock.CheckForFullLines();
@@ -509,7 +668,7 @@ namespace RhinoTetris
 
             if (_gameBlock.Collide(_currentBlock))
             {
-                _mainBw.ReportProgress(0, SoundType.Place);
+                PlayFx(_fxPlacePath);
                 _gameBlock = _gameBlock.Merge(block);
                 GenerateBlocks();
                 lines = _gameBlock.CheckForFullLines();
@@ -560,16 +719,32 @@ namespace RhinoTetris
 
         void DisplayPipeline_PostDrawObjects(object sender, DrawEventArgs e)
         {
-            DrawBlocks(new[] { _gameBlock, _currentBlock }, e);
-            e.Display.DrawMeshShaded(_limits, _limitsDisplayMaterial);
+            if (_initAnimationZ > 0)
+            {
+                if (_introBorder != null)
+                {
+                    e.Display.DrawBrepShaded(_introBorder, _introDisplayMaterial);
+                }
 
-            e.Display.Draw3dText(_scorePointsLabel, Color.Gray);
-            e.Display.Draw3dText(_scoreLevelLabel, Color.Gray);
-            e.Display.Draw3dText(_scoreLinesLabel, Color.Gray);
 
-            e.Display.Draw3dText(_scorePoints, Color.Black);
-            e.Display.Draw3dText(_scoreLevel, Color.Black);
-            e.Display.Draw3dText(_scoreLines, Color.Black);
+                if (_introText1 != null)
+                    e.Display.Draw3dText(_introText1, _introDisplayMaterial.Diffuse);
+                if (_introText2 != null)
+                    e.Display.Draw3dText(_introText2, _introDisplayMaterial.Diffuse);
+            }
+            else
+            {
+                DrawBlocks(new[] { _gameBlock, _currentBlock }, e);
+                e.Display.DrawMeshShaded(_limits, _limitsDisplayMaterial);
+
+                e.Display.Draw3dText(_scorePointsLabel, Color.Gray);
+                e.Display.Draw3dText(_scoreLevelLabel, Color.Gray);
+                e.Display.Draw3dText(_scoreLinesLabel, Color.Gray);
+
+                e.Display.Draw3dText(_scorePoints, Color.Black);
+                e.Display.Draw3dText(_scoreLevel, Color.Black);
+                e.Display.Draw3dText(_scoreLines, Color.Black);
+            }
         }
         void DisplayPipeline_CalculateBoundingBox(object sender, CalculateBoundingBoxEventArgs e)
         {

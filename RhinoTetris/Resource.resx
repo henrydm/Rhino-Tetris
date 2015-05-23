@@ -130,10 +130,19 @@
   <data name="rotate" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Resources\rotate.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
+  <data name="bootUp" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\bootUp.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
   <data name="line" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Resources\line.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="lost" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Resources\lost.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="levelUp" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\levelUp.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="_4lines" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\4lines.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
 </root>

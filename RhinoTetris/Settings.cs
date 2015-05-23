@@ -42,18 +42,6 @@ namespace RhinoTetris
                     var z = row + 0.5;
                     Transforms[column, row] = Transform.Translation(x, 0, z);
                 }
-
-            //Next Block Transforms
-            //TransformsNextBlock = new Transform[Columns, Rows];
-            //for (int column = 0; column < Columns; column++)
-            //    for (int row = 0; row < Rows; row++)
-            //    {
-            //        var x = halfWidth+column-2 ;
-            //        var z = row -Rows+4.5;
-            //        TransformsNextBlock[column, row] = Transform.Translation(x, 0, z);
-
-            //    }
-            
         }
     }
 }

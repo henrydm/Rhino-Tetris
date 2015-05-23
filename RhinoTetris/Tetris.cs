@@ -34,9 +34,59 @@ namespace RhinoTetris
         protected override Result RunCommand(RhinoDoc doc, RunMode mode)
         {
 
-            var game = new Game();
+            if (Game.Playing) return Result.Failure;
+
+            var options = new GetOption();
+            options.SetCommandPrompt("Rhino-Pong");
+            var indexSound = options.AddOption("Sound");
+            var indexFx = options.AddOption("FX");
+            var indexReset = options.AddOption("Reset");
+            var indexExit = options.AddOption("Exit");
+
+
+
+
+
+            var game = new Game {StartingAnimationEnabled = true};
             game.StartGame();
+            game.OnStopGame += (o, e) => RhinoApp.SendKeystrokes("!", true);
+            while (true)
+            {
+                options.Get();
+                var slectedOption = options.Option();
+                if (slectedOption == null) break;
+
+                if (slectedOption.Index == indexFx)
+                {
+                    game.Fx = !game.Fx;
+                   
+                }
+                else if (slectedOption.Index == indexSound)
+                {
+                    game.SetMusic(!game.Music);
+                }
+                else if (slectedOption.Index == indexReset)
+                {
+                    Game.Playing = false;
+                    var music = game.Music;
+                    var fx = game.Fx;
+                   System.Threading.Thread.Sleep(100);
+                    game = new Game {StartingAnimationEnabled = false, Fx = fx};
+                    game.OnStopGame += (o, e) => RhinoApp.SendKeystrokes("!", true);
+                    game.StartGame();
+                    System.Threading.Thread.Sleep(50);
+                    if (!music)
+                        game.SetMusic(false);
+
+                }
+                else
+                {
+                    break;
+                }
+            }
+            Game.Playing=false;
             return Result.Success;
+
         }
     }
 }
