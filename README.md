@@ -1,8 +1,11 @@
 Tetris Game for Rhinoceros.
 
+
 Use Left/Right keys to move the block, Up key or Space key to rotate, and Down key to move it down.
+
 To Install:
 Just drag Tetris.rhp to Rhinoceros, finally type Tetris in command prompt and press Enter. 
+
 
 Features:
 * Original Tetris rules .
