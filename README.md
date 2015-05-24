@@ -1,11 +1,6 @@
-#Tetris Game for Rhinoceros.
+# Rhino Tetris.
 
-
-Use Left/Right keys to move the block, Up key or Space key to rotate, and Down key to move it down.
-
-To Install:
-Just drag Tetris.rhp to Rhinoceros, finally type Tetris in command prompt and press Enter. 
-
+Tetris Game for Rhinoceros 3D (CAD Software).
 
 Features:
 * Original Tetris rules .
@@ -15,3 +10,11 @@ Features:
 * No ending, do as many lines or points as possible.
 * Reset the game at any time by command prompt option.
 * Exit by loosing, pressing Esc. Key or command prompt option.
+
+Usage:
+* Left/Right keys to move block.
+* Up key or Space key rotate block.
+* Down key move down block.
+
+To Install:
+Just drag Tetris.rhp to Rhinoceros, finally type Tetris in command prompt and press Enter. 
