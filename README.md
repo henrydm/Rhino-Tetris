@@ -16,5 +16,5 @@ Usage:
 * Up key or Space key rotate block.
 * Down key move down block.
 
-To Install:
-Just drag Tetris.rhp to Rhinoceros, finally type Tetris in command prompt and press Enter. 
+To Install: 
+* Just drag Tetris.rhp to Rhinoceros, finally type Tetris in command prompt and press Enter. 
