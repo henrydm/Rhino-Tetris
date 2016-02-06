@@ -22,3 +22,10 @@ Usage:
 
 To Install: 
 * Just drag Tetris.rhp to Rhinoceros, finally type Tetris in command prompt and press Enter. 
+
+Video
+* https://youtu.be/XB6Fx8JZfNM
+
+Compiled rhp for Rhinoceros
+* http://www.food4rhino.com/project/tetris
+
