@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using Rhino;
+﻿using Rhino;
 using Rhino.Commands;
-using Rhino.Geometry;
-using Rhino.Input;
 using Rhino.Input.Custom;
 
 namespace RhinoTetris
@@ -26,14 +22,10 @@ namespace RhinoTetris
         }
 
         ///<returns>The command name as it appears on the Rhino command line.</returns>
-        public override string EnglishName
-        {
-            get { return "Tetris"; }
-        }
+        public override string EnglishName => "Tetris";
 
         protected override Result RunCommand(RhinoDoc doc, RunMode mode)
         {
-
             if (Game.Playing) return Result.Failure;
 
             var options = new GetOption();
@@ -43,11 +35,7 @@ namespace RhinoTetris
             var indexReset = options.AddOption("Reset");
             var indexExit = options.AddOption("Exit");
 
-
-
-
-
-            var game = new Game {StartingAnimationEnabled = true};
+            var game = new Game { StartingAnimationEnabled = true };
             game.StartGame();
             game.OnStopGame += (o, e) => RhinoApp.SendKeystrokes("!", true);
             while (true)
@@ -59,7 +47,6 @@ namespace RhinoTetris
                 if (slectedOption.Index == indexFx)
                 {
                     game.Fx = !game.Fx;
-                   
                 }
                 else if (slectedOption.Index == indexSound)
                 {
@@ -70,23 +57,21 @@ namespace RhinoTetris
                     Game.Playing = false;
                     var music = game.Music;
                     var fx = game.Fx;
-                   System.Threading.Thread.Sleep(100);
-                    game = new Game {StartingAnimationEnabled = false, Fx = fx};
+                    System.Threading.Thread.Sleep(100);
+                    game = new Game { StartingAnimationEnabled = false, Fx = fx };
                     game.OnStopGame += (o, e) => RhinoApp.SendKeystrokes("!", true);
                     game.StartGame();
                     System.Threading.Thread.Sleep(50);
                     if (!music)
                         game.SetMusic(false);
-
                 }
                 else
                 {
                     break;
                 }
             }
-            Game.Playing=false;
+            Game.Playing = false;
             return Result.Success;
-
         }
     }
 }
