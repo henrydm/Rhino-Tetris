@@ -165,7 +165,7 @@ namespace RhinoTetris
 
             _colorLabel = IsPantherSkin ? Color.DimGray : Color.FromArgb(70, 70, 70);
             _colorText = IsPantherSkin ? Color.White : Color.Black;
-            _limitsDisplayMaterial = new DisplayMaterial(IsPantherSkin ? Color.FromArgb(100, 0, 0) : Color.DarkSlateGray);
+            _limitsDisplayMaterial = new DisplayMaterial(IsPantherSkin ? Color.FromArgb(90, 0, 0) : Color.DarkSlateGray);
             _introDisplayMaterial = new DisplayMaterial(Color.DimGray);
 
             _limits = CreateLimits(out _scorePointsLabel, out _scoreLevelLabel, out _scoreLinesLabel);
