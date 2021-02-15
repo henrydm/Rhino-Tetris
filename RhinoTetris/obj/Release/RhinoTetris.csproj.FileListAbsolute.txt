@@ -1,0 +1,9 @@
+C:\Users\neng\source\repos\Rhino-Tetris\RhinoTetris\bin\RhinoTetris.dll
+C:\Users\neng\source\repos\Rhino-Tetris\RhinoTetris\bin\RhinoTetris.pdb
+C:\Users\neng\source\repos\Rhino-Tetris\RhinoTetris\obj\Release\Interop.WMPLib.dll
+C:\Users\neng\source\repos\Rhino-Tetris\RhinoTetris\obj\Release\RhinoTetris.csproj.ResolveComReference.cache
+C:\Users\neng\source\repos\Rhino-Tetris\RhinoTetris\obj\Release\RhinoTetris.Resource.resources
+C:\Users\neng\source\repos\Rhino-Tetris\RhinoTetris\obj\Release\RhinoTetris.csproj.GenerateResource.cache
+C:\Users\neng\source\repos\Rhino-Tetris\RhinoTetris\obj\Release\RhinoTetris.csproj.CoreCompileInputs.cache
+C:\Users\neng\source\repos\Rhino-Tetris\RhinoTetris\obj\Release\RhinoTetris.dll
+C:\Users\neng\source\repos\Rhino-Tetris\RhinoTetris\obj\Release\RhinoTetris.pdb
