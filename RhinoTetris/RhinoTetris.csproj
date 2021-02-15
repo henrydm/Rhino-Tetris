@@ -34,7 +34,7 @@
   <ItemGroup>
     <Reference Include="PresentationCore" />
     <Reference Include="RhinoCommon">
-      <HintPath>..\..\..\..\..\..\Program Files\Rhinoceros 6\System\RhinoCommon.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files\Rhino 6\System\RhinoCommon.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
@@ -54,7 +54,7 @@
     </Compile>
     <Compile Include="Settings.cs" />
     <Compile Include="Block.cs" />
-    <Compile Include="Tetris.cs" />
+    <Compile Include="TetrisCommand.cs" />
     <Compile Include="RhinoTetrisPlugIn.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
